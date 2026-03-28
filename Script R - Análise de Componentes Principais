@@ -1,0 +1,1688 @@
+
+
+### Links úteis: 
+# https://medium.com/psicodata/tutorial-de-analise-fatorial-exploratoria-no-r-1db5b6bf8dd5
+
+
+
+# ANÁLISE DE COMPONENTES PRINCIPAIS(ACP) 
+
+
+### Pacotes a serem utilizados na análise
+
+install.packages("htmltools")
+
+#install.packages("knitr")
+install.packages("cluster")
+install.packages("graphics") 
+install.packages("FactoMineR")
+install.packages("vegan")
+install.packages("factoextra")
+#install.packages("Rcmdr")
+install.packages("corrplot")
+install.packages("ggcorrplot")
+install.packages("psych")
+#install.packages("rmarkdown")
+install.packages("dplyr")
+install.packages("Factoshiny")
+install.packages("MASS")
+install.packages("ggplot2")
+install.packages("psych")
+install.packages("ExpDes.pt")
+#install.packages("metan")
+install.packages("GGally")
+install.packages("readxl")
+install.packages("PerformanceAnalytics")
+install.packages("e1071")
+
+
+#require(knitr)
+require(cluster)
+require(graphics) 
+require(FactoMineR)
+require(vegan)
+require(factoextra)
+#require(Rcmdr)
+require(corrplot)
+require(ggcorrplot)
+#library(rmarkdown)
+require(dplyr)
+require("Factoshiny")
+require("MASS")
+require("ggplot2")
+require("psych")
+require("ExpDes.pt")
+#require("metan")
+require("readxl")
+require("PerformanceAnalytics")
+require("corrplot")
+require("e1071")
+
+
+
+############################
+### Leitura do banco de dados
+banco_original0. <- read.table("clipboard", h=T, sep="\t" ,dec=",")
+names(banco_original0.)
+summary(banco_original0.)
+############################
+
+banco_original0 <- banco_original0. 
+#banco_original0 <- subset(banco_original0.,Ano == "Ano_3" )
+#subset(banco_original0,Cluster == "G6" )
+
+
+
+############################
+# Criação do banco EXPORTADO para um banco ATIVO no R
+banco_original <- na.omit(banco_original0)
+summary(banco_original)
+head(banco_original)
+tail(banco_original)
+names(banco_original)
+############################
+
+
+
+
+
+############################
+# Preparação do banco ATIVO com a Exclusão dos fatores
+banco_original1 <- (scale(banco_original[,-c(1,2,3,7,8,9)]))  # com a normalização/padronização com o "scale()" E Retirada da Duas Primeiras Colunas de Fatores da Base de Dados, Exemplo:Trat e Rep: -c(1:2)
+summary(banco_original1)
+head(banco_original1)
+tail(banco_original1)
+############################                            
+      
+
+
+
+
+
+############################
+# Correlations
+
+require("PerformanceAnalytics")
+
+#chart.Correlation(data.matrix(banco_original1), histogram = F,method = c("spearman"), pch=20)
+
+chart.Correlation(data.matrix(banco_original1), histogram = F,method = c("pearson"), pch=20)
+chart.Correlation(data.matrix(banco_original1), histogram = F,method = c("spearman"), pch=20)
+
+#chart.Correlation(data.matrix(subset(banco_original, Ano == "2023")[,-c(1:3)]), histogram = F,method = c("pearson"), pch=20, main = "Ano 2023")
+#chart.Correlation(data.matrix(subset(banco_original, AMOSTRA == "T8")[,-c(1:3)]), histogram = F,method = c("pearson"), pch=20, main = "T8")
+#chart.Correlation(data.matrix(subset(banco_original,Camada == "0_10")[,-c(1:4)]), histogram = F,method = c("pearson"), pch=20)
+
+############################
+
+
+
+
+
+############################
+#--------------------------------------------------------
+
+# Carregue o banco de dados (caso ainda não tenha feito)
+# banco_original0 <- read.table("clipboard", head = TRUE, dec = ",")
+
+# Converta os dados para matriz numérica, excluindo a primeira coluna se ela for, por exemplo, uma coluna de identificação
+#Data <- data.matrix(subset(banco_original, [,-c(1:3)])
+#Data <- data.matrix(subset(banco_original, Ano == "2016")[,-c(1:3)])
+#Data <- data.matrix(subset(banco_original, AMOSTRA == "T8")[,-c(1:3)])
+
+# Calcule a matriz de correlação de Pearson
+#corr <- cor(na.omit(Data), method = "pearson")
+
+#----------------------------------------
+# Função para calcular a matriz de valores-p (p-values)
+cor.mtest <- function(mat, ...) {
+  mat <- as.matrix(mat)
+  n <- ncol(mat)
+  p.mat <- matrix(NA, n, n)
+  diag(p.mat) <- 0
+  for (i in 1:(n - 1)) {
+    for (j in (i + 1):n) {
+      tmp <- cor.test(mat[, i], mat[, j], ...)
+      p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+    }
+  }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  return(p.mat)
+}
+#----------------------------------------
+# Criar matriz de valores-p
+#pmat <- cor.mtest(na.omit(Data)); pmat
+#----------------------------------------
+############################
+
+
+
+############################
+#--------------------------------------------------------------------
+#--------------------------------------------------------------------
+
+# Carregar o pacote necessário
+library(ggcorrplot)
+
+# Correlograma com p-valores
+
+#-------------------------------
+#data.01 <- data.matrix((banco_original)[,-c(1:3)])
+data.01 <- data.matrix(subset(banco_original, AMOSTRA != "T8")[,-c(1:3)])
+
+corrplot(cor(na.omit(data.01)), method = "color", type = "lower", addCoef.col = "black",order = "hclust", diag = F,tl.col = "black", tl.srt = 45,tl.cex = 0.8,number.cex = 0.8,p.mat = cor.mtest(na.omit(data.01)))
+
+#-------------------------------
+#data.0 <- data.matrix(subset(banco_original, Ano == "2023")[,-c(1:3)])
+data.0 <- data.matrix(subset(banco_original, AMOSTRA == "T8")[,-c(1:3)])
+
+par(cex.main = 1.1)  # tamanho do título
+corrplot(cor(na.omit(data.0),          
+         method = "pearson"), method = "color", type = "lower", addCoef.col = "black",order = "hclust",
+         diag = F,tl.col = "black", tl.srt = 45,tl.cex = 0.8,number.cex = 0.8, 
+         p.mat = cor.mtest(na.omit(data.0)))
+
+# escreve o título mais baixo (line controla a distância)
+#title("Ano 2023", line = 0.2, cex.main = 1.1, font = 2)
+title("Amostra T8", line = 2, cex.main = 1.1, font = 2)
+
+#--------------------------------------------------------------------
+#--------------------------------------------------------------------
+############################
+
+
+
+############################
+#ggcorrplot(corr, lab=T, type = "upper",show.diag = TRUE,ggtheme = ggplot2::theme_minimal(),colors = c("red", "white", "blue"))
+#ggcorrplot(corr, lab=T, type = "upper",colors = c("red", "white", "blue"), p.mat = pmat)
+#ggcorrplot(corr, lab=T, type = "lower", p.mat = pmat)
+#corrplot(corr, method = "color", type = "lower", addCoef.col = "black",order = "hclust", diag = F,tl.col = "black", tl.srt = 45,tl.cex = 0.8,number.cex = 0.8,p.mat = pmat)
+#corrplot(corr, method = "circle", type = "upper", tl.col = "black", tl.srt = 45)
+#corrplot(corr, method = "pie", type = "upper", tl.col = "black", tl.srt = 45)
+#corrplot(corr, method = "number", type = "upper", tl.col = "black", tl.srt = 45, diag=F)
+
+#ggcorrplot(corr,
+#           lab = TRUE,
+#           type = "upper",
+#           show.diag = TRUE,
+#           ggtheme = ggplot2::theme_minimal(),
+#           colors = c("red", "white", "blue"),
+#           p.mat = pmat,
+#           sig.level = 0.05, # valores-p acima disso serão "apagados" do gráfico
+#           insig = "blank")  # opção para mostrar branco onde não é significativo
+
+############################
+
+
+
+
+
+
+###########################
+# Resultado do Teste de Esfericidade
+banco_correl <- cor(banco_original1)
+#round(banco_correl,2)
+cortest.bartlett(banco_correl)
+############################
+
+
+
+############################
+# Kaiser-Meyer-Olkin Measure of Sampling Adequacy, ou 
+# simplesmente KMO para os mais íntimos. 
+KMO(banco_original1)
+############################
+
+
+
+
+###############################################
+### Gráficos da ACP (Mapa Fatorial)
+#Análise Gráfica dos Componentes Principais por meio do diagrama unitário (Mapa Fatorial das variáveis) com as variáveis analisadas e diagrama com os indivíduos (Mapa Fatorial dos indivíduos). 
+res_ACP<-PCA(banco_original1, ncp=3) # análise de componentes principais
+###############################################
+
+
+
+
+
+###############################################
+categorias <- c(
+  rep("Atitude", 2),   
+  rep("Comportamento", 1), 
+  rep("Atitude", 3),  
+  rep("Comportamento", 4), 
+  rep("Atitude", 6),   
+  rep("Comportamento", 2),  
+  rep("Hábito/Valor", 2)   
+)
+
+#names(categorias) <- colnames(dados_itens)
+
+# Criar vetor de cores para categorias
+#cores <- c("Atitude" = "steelblue", "Comportamento" = "darkgreen", "Hábito/Valor" = "purple")
+cores <- c("Atitude" = "blue", "Comportamento" = "green", "Hábito/Valor" = "red")
+
+# Plotar PCA com cores por categoria
+fviz_pca_var(res_ACP,
+             col.var = categorias,
+             palette = cores,
+             legend.title = "Categoria",
+             repel = TRUE) +
+  theme_minimal()
+###############################################
+
+
+
+
+
+
+###############################################
+### Biplot dos indivíduos e variáveis
+fviz_pca_biplot(res_ACP, repel = TRUE)
+###############################################
+
+
+
+###############################################
+library(FactoMineR)
+library(factoextra)
+
+# Executa a ACP
+res_ACP1 <- PCA(banco_original1, ncp = 3, quanti.sup = c(6,11,14,15,16) , scale.unit = TRUE, graph = T)
+
+# Extrai as contribuições das variáveis
+contrib1 <- res_ACP1$var$contrib
+
+# Define um limiar de contribuição (ex: 0.5% por componente principal)
+# Aqui usamos 0.5 em vez de 50% porque a contribuição é dada em proporção
+limiar <- 0.5  
+
+# Filtra variáveis com contribuição > 0.5% para pelo menos um dos componentes
+variaveis_relevantes <- rownames(contrib1)[apply(contrib1, 1, function(x) any(x > limiar))]
+
+# Mostra as variáveis filtradas
+contrib1[variaveis_relevantes, ]
+###############################################
+
+
+
+
+
+
+
+###############################################
+### Cálculo dos Autovalores (eigenvalue):
+#A escolha dos componentes que apresentam "eigenvalues" maior que 1 (eigenvalues > 1) decorre do fato de que, no mínimo, o componente deve explicar a variância de 1 variável utilizada no modelo, uma vez que são variáveis padronizadas.
+round(res_ACP[[1]],2)
+
+###  Gráfico Scree plot
+fviz_screeplot(res_ACP, addlabels = TRUE, ylim = c(0, 80)) 
+###############################################
+
+
+
+###############################################
+### Preparação da tabela com os dados da ACP
+
+# Importância dos Componentes
+pca_cov <- prcomp(banco_original1)
+summary(pca_cov)
+
+#A primeira parte consta os autovalores(considerando os dados padronizados) e a percentagem de explicação dos componentes (PC1, PC2 e PC3). A segunda parte mostra a correlação das variáveis com os respectivos componentes, sendo expressos como Dim.1, Dim.2 e Dim.3.
+
+# Preparação da tabela
+PC1 <- c(round(res_ACP[[1]][1,1],2),round(res_ACP[[1]][1,2],2))
+PC2 <- c(round(res_ACP[[1]][2,1],2),round(res_ACP[[1]][2,2],2))
+PC3 <- c(round(res_ACP[[1]][3,1],2),round(res_ACP[[1]][3,2],2))
+Variavel <- c("Eigen Value","% Explained")
+Parte1 <- data.frame(Variavel,PC1,PC2,PC3)
+Parte2 <- round(res_ACP[[2]][[2]][,1:3],3)
+Tabela_ACP2 <- list(Parte1,Parte2)
+Tabela_ACP2
+###############################################
+##############################################################################################################
+
+
+
+
+
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Tempo_min), 
+                     palette = c(1:30), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Herb), 
+                     palette = c(1:30), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Perfil_m), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Periodo), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+###----------------------------------------
+###----------------------------------------
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$ano), 
+                     palette = c(1:20),
+                     legend.title = "Ano", 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Ácido_Cítrico_Cat), 
+                     palette = c(1:20), 
+                     legend.title = "Ácido Cítrico", 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Sacarose_Cat), 
+                     palette = c(1:20), 
+                     legend.title = "Sacarose", 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Trigonelina_Cat), 
+                     palette = c(1:20), 
+                     legend.title = "Trigonelina", 
+                     addEllipses = TRUE)
+
+###----------------------------------------
+###----------------------------------------
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$TRAT), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$DOSE), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$CORTES), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$ESP), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$TEMPO_CORTE), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$TEMPO_CORTE_T_1m), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE,
+                     title="Tempos de Corte do Tratamento 1.0 m") 
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$TEMPO_CORTE_T_1.5m), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE,
+                     title="Tempos de Corte do Tratamento 1.5 m") 
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$TEMPO_CORTE_T_2m), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE,
+                     title="Tempos de Corte do Tratamento 2.0 m") 
+
+###----------------------------------------
+###----------------------------------------
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Horario), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Ano), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Planta), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+###############################################
+
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Uso_montante), 
+                     palette = c(1:30), 
+                     addEllipses = TRUE)
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$IQAI), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$IQAAR), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Tempo), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Trat), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$EXAME), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Month), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$genótipo), 
+                     palette = c(1:20), 
+#                     xlim=c(-6,6),
+#                     ylim=c(-6,6),             
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$estresse), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+###############################################
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$CULTIVAR), 
+                     palette = c(1:30), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$NIVEL), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = with(banco_original,factor(interaction(CULTIVAR,NIVEL))), 
+                     palette = c(1:30), 
+                     addEllipses = TRUE)
+
+
+
+###############################################
+names(banco_original)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Interpretação_MOS), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Interpretação_Arilsulfatase), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+
+
+
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Interpretação_Beta_Glicosidase), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+###############################################
+
+
+
+
+
+
+
+###############################################
+# Defina os novos nomes das categorias na legenda
+
+novos_nomes <- c("Categoria CJ", "Categoria GU", "Categoria MP", "Categoria MF")
+novo_titulo_legenda <- "Tratamentos"
+cores_preenchimento <- c("red", "blue", "green", "yellow")
+simbolos_preenchimento <- c(21,22,23,24)
+
+
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$TRAT), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = cores_preenchimento,
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE) +
+      ggtitle(" ") +
+
+      annotate("text", x = -Inf, y = Inf, label = "PCA-Biplot", hjust = -0.5, vjust = 1.5, size = 3, fontface = "bold") +
+      scale_fill_manual(name = novo_titulo_legenda, values = cores_preenchimento, labels = novos_nomes) +
+      scale_color_manual(name = novo_titulo_legenda, values = cores_preenchimento, labels = novos_nomes) +
+      scale_shape_manual(name = novo_titulo_legenda, values = simbolos_preenchimento, labels = novos_nomes) +
+      guides(color = guide_legend(override.aes = list(shape = simbolos_preenchimento, fill = cores_preenchimento)))
+
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################
+#-------------------------------------
+                        
+### Biplot dos indivíduos e variáveis - POR TRATAMENTO OU ANO                             
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$Solo), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = c(1:20),
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE)
+
+###############################################
+#-------------------------------------
+
+# Gerar o gráfico de PCA
+p <- fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Water_regime), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Salvar o gráfico com alta resolução (exemplo com 300 DPI)
+ggsave("C:/Users/Home/OneDrive/Desktop/Dados - Embrapa/ANALISE DE DADOS - CPAC/WALTER/PATRICIA/pca_biplot_Water_regime.png", plot = p, dpi = 600, width = 8, height = 6)
+
+#-------------------------------------
+
+# Abrir dispositivo gráfico para salvar em alta resolução
+png("C:/Users/Home/OneDrive/Desktop/Dados - Embrapa/ANALISE DE DADOS - CPAC/WALTER/PATRICIA/pca_biplot_Water_regime.png", width = 8, height = 6, units = "in", res = 600)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                label = "var", 
+                habillage = factor(banco_original$Water_regime), 
+                palette = c(1:20), 
+                addEllipses = TRUE, 
+                repel = TRUE)
+
+# Fechar dispositivo gráfico
+dev.off()
+
+#-------------------------------------
+###############################################
+
+
+###############################################
+#-------------------------------------
+                        
+### Biplot dos indivíduos e variáveis - POR TRATAMENTO OU ANO                             
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$Genotype), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = c(1:20),
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE)
+
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$Trat), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = c(1:20),
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE)
+
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$Tratamento), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = c(1:20),
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE)
+
+
+fviz_pca_biplot(res_ACP,
+             label = "var", # aparece o nome das variáveis
+             habillage = factor(banco_original$Ano), # color by groups
+             #palette = c("green", "red", "yellow","blue"),
+             palette = c(1:20),
+             addEllipses = TRUE, # Concentration ellipses
+             repel = TRUE)
+
+###############################################
+#-------------------------------------
+
+# Gerar o gráfico de PCA
+p <- fviz_pca_biplot(res_ACP, 
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Genotype), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE)
+
+# Salvar o gráfico com alta resolução (exemplo com 300 DPI)
+ggsave("C:/Users/Home/OneDrive/Desktop/Dados - Embrapa/ANALISE DE DADOS - CPAC/WALTER/PATRICIA/pca_biplot_Genotype.png", plot = p, dpi = 600, width = 8, height = 6)
+
+#-------------------------------------
+
+# Abrir dispositivo gráfico para salvar em alta resolução
+png("C:/Users/Home/OneDrive/Desktop/Dados - Embrapa/ANALISE DE DADOS - CPAC/WALTER/PATRICIA/pca_biplot_Genotype.png", width = 8, height = 6, units = "in", res = 600)
+
+# Gerar o gráfico de PCA
+fviz_pca_biplot(res_ACP, 
+                label = "var", 
+                habillage = factor(banco_original$Genotype), 
+                palette = c(1:20), 
+                addEllipses = TRUE, 
+                repel = TRUE)
+
+# Fechar dispositivo gráfico
+dev.off()
+
+#-------------------------------------
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################
+###############################################
+
+# Script em R para Construir um Índice com ACP:
+
+###############################################
+
+# Supondo que "banco_original" seja seu data frame de variáveis
+# 1. Padronização
+df_padronizado_zi <- scale(banco_original[,-c(1:1)])
+
+
+# 2. ACP
+resultado_acp <- prcomp(df_padronizado_zi, scale. = FALSE)
+resultado_acp$rotation[,1:3]
+
+
+# 3. Ver cargas do PC
+#cargas_PC <- resultado_acp$rotation[,1] ; data.frame(cargas_PC)
+cargas_PC <- resultado_acp$rotation[,1:3] ; data.frame(cargas_PC)
+cargas_PC
+
+
+# 4. Calcula a soma das cargas absolutas por variável
+cargas_PC.df <- data.frame(abs(cargas_PC))
+cargas_PC.df$Carga_Absoluta <- abs(cargas_PC.df$PC1) + abs(cargas_PC.df$PC2) + abs(cargas_PC.df$PC3)
+#cargas_PC.df$Carga_Absoluta <- abs(cargas_PC.df$PC1) + abs(cargas_PC.df$PC2)
+#cargas_PC.df$Carga_Absoluta <- abs(cargas_PC.df$PC1)
+cargas_PC.df
+
+
+# 5. Pegar valores absolutos e normaliza os pesos
+pesos <- abs(cargas_PC.df$Carga_Absoluta)
+
+
+# 6. Calcula a soma total das cargas absolutas
+soma_total <- sum(pesos)
+
+
+# 7. Calcula o peso final de cada variável (normalizado para somar 1)
+Pesos_Normalizados_wi <- pesos / soma_total
+
+
+# 8. Adiciona o peso final na base de dados "cargas_PC.df"
+cargas_PC.df.norm <- data.frame(cargas_PC.df,Pesos_Normalizados_wi)
+cargas_PC.df.norm
+
+
+# 9. Exibe os pesos finais
+Variavel <- paste(row.names(cargas_PC.df.norm),".norm",sep="")
+dados_cargas <- data.frame(Variavel,Peso_Final = Pesos_Normalizados_wi)
+dados_cargas
+
+
+
+###############################################
+###############################################
+
+
+
+
+# 5. Criar o índice
+indice <- as.numeric(df_padronizado_zi %*% Pesos_Normalizados_wi)
+
+# 6. (Opcional) Reescalar para 0-100
+indice_escala <- 100 * (indice - min(indice)) / (max(indice) - min(indice))
+
+# Visualizar
+head(indice_escala)
+
+
+
+
+
+###############################################
+###############################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################
+###############################################
+
+# Carregue os pacotes necessários
+library(factoextra)
+library(gridExtra)
+library(ggplot2)
+
+# Gere cada gráfico PCA
+p1 <- fviz_pca_biplot(res_ACP,  
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Water_regime), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE) +
+      annotate("text", x = -Inf, y = Inf, label = "A", hjust = -0.5, vjust = 1.5, size = 6, fontface = "bold") +
+      ggtitle("")
+
+
+p2 <- fviz_pca_biplot(res_ACP,  
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Genotype), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE) +
+      annotate("text", x = -Inf, y = Inf, label = "B", hjust = -0.5, vjust = 1.5, size = 6, fontface = "bold")+
+      ggtitle("")
+
+
+p3 <- fviz_pca_biplot(res_ACP,  
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Water_regime), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE) +
+      annotate("text", x = -Inf, y = Inf, label = "C", hjust = -0.5, vjust = 1.5, size = 6, fontface = "bold")+
+      ggtitle("")
+
+
+p4 <- fviz_pca_biplot(res_ACP,  
+                     repel = TRUE, 
+                     label = "var", 
+                     habillage = factor(banco_original$Genotype), 
+                     palette = c(1:20), 
+                     addEllipses = TRUE) +
+      annotate("text", x = -Inf, y = Inf, label = "D", hjust = -0.5, vjust = 1.5, size = 6, fontface = "bold")+
+      ggtitle("")
+
+
+#----------------------------------
+
+# Abrir dispositivo gráfico para salvar em alta resolução
+png("C:/Users/Home/OneDrive/Desktop/Dados - Embrapa/ANALISE DE DADOS - CPAC/WALTER/PATRICIA/pca_biplot_4_Gráficosxxx.png", width = 10, height = 8, units = "in", res = 600)
+
+# Organize os gráficos numa única figura 2x2
+grid.arrange(p1, p2, p3, p4, nrow = 2, ncol = 2)
+
+# Fechar dispositivo gráfico
+dev.off()
+
+###############################################
+###############################################
+
+
+
+
+pca <-  res_ACP
+
+# 4. Biplot com pontos (Clones) e variáveis
+fviz_pca_biplot(pca,
+repel = TRUE,
+label = 'var',
+#habillage = factor(banco_original$IQAAR), # colorir pontos conforme IQAAR
+habillage = factor(banco_original$Especie), # colorir pontos conforme CLONES
+#$addEllipses = TRUE,
+#ellipse.level = 0.95,
+col.var = 'black',
+title = 'Biplot PCA (Espécie)')
+
+
+
+
+pca <-  res_ACP
+
+# 4. Biplot com pontos (microbacias) e variáveis
+fviz_pca_biplot(pca,
+repel = TRUE,
+label = 'var',
+habillage = factor(banco_original$IQAI), # colorir pontos conforme IQAAR
+addEllipses = TRUE,
+ellipse.level = 0.95,
+col.var = 'black',
+title = 'Biplot PCA (IQAI) — Microbacias vs Variáveis Ambientais')
+
+
+
+
+
+
+# 5. Agrupamento hierárquico baseado nos scores da PCA
+hc <- hclust(dist(pca$ind$coord), method = 'ward.D2')
+
+
+# 6. Plotar dendrograma e colorir grupos
+Teste <- fviz_dend(hc, k = 5, rect = TRUE, rect_fill = TRUE,main = 'Agrupamento Hierárquico — Espécies (PCA)')
+Teste
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+
+pca <-  res_ACP
+
+# 1. Biplot com pontos (Clones) e variáveis
+fviz_pca_biplot(pca,
+repel = TRUE,
+label = 'var',
+#habillage = factor(banco_original$CLONES), # colorir pontos conforme CLONES
+#$addEllipses = TRUE,
+#ellipse.level = 0.95,
+col.var = 'black',
+title = 'Biplot PCA (CLONES) — Clones')
+
+
+
+# 2. Agrupamento hierárquico baseado nos scores da PCA
+scores <- as.data.frame(pca$ind$coord)
+rownames(scores) <- banco_original$CLONES
+
+hc <- hclust(dist(scores), method = "ward.D2")
+#hc <- hclust(dist(pca$ind$coord), method = 'ward.D2')
+
+
+# 3. Plotar dendrograma e colorir grupos
+n.clust = 10
+fviz_dend(hc, k = n.clust, rect = TRUE, 
+         rect_fill = TRUE,cex = 0.6,
+         labels_track_height = 0.8,
+         main = 'Agrupamento Hierárquico — Clones (PCA)') +
+  ggplot2::labs(subtitle = "Clustering baseado nos scores da PCA")
+
+
+# 4. Extrair os grupos formados (ESSENCIAL)
+grupos <- cutree(hc, k = n.clust)
+grupos
+
+
+
+
+# 5. Associar os grupos aos CLONES
+resultado_cluster <- data.frame(
+  CLONE = banco_original$CLONES,
+  GRUPO = grupos
+)
+
+resultado_cluster
+
+
+# 6. Ver quem está em cada grupo (visão analítica)
+split(resultado_cluster$CLONE, resultado_cluster$GRUPO)
+
+
+
+
+# 7. Tabela organizada (mais profissional)
+
+library(dplyr)
+
+resultado_cluster %>%
+  arrange(GRUPO) %>%
+  group_by(GRUPO) %>%
+  summarise(CLONES = paste(CLONE, collapse = ", "))
+
+
+
+# 8. lotar PCA com clusters (visual forte)
+
+fviz_pca_ind(pca,
+             geom = "point",
+             col.ind = factor(grupos),
+             palette = "jco",
+             addEllipses = TRUE,
+             ellipse.level = 0.95,
+             legend.title = "Grupo")
+
+
+grupos <- cutree(hc, k = n.clust)
+
+data.frame(CLONE = banco_original$CLONES,
+           GRUPO = grupos)
+
+
+
+
+# Identificar numeros de grupos
+
+#fviz_nbclust(pca$ind$coord, FUN = hcut, method = "wss")
+
+library(factoextra)
+
+scores_pca <- as.data.frame(pca$ind$coord)
+fviz_nbclust(scores_pca, 
+             FUNcluster = factoextra::hcut, 
+             method = "silhouette")
+
+
+
+
+#scores_pca <- as.data.frame(pca$ind$coord)
+#fviz_nbclust(
+#  x = scores_pca,
+#  FUNcluster = function(x, k) factoextra::hcut(x, k = k, hc_method = "ward.D2"),
+#  method = "silhouette"
+#)
+
+
+#scores_pca <- as.data.frame(pca$ind$coord)
+#fviz_nbclust(scores_pca, 
+#             FUNcluster = factoextra::hcut, 
+#             method = "wss")
+
+
+# Caminho mais robusto: calcular silhouette manualmente
+
+library(cluster)
+library(factoextra)
+
+scores_pca <- as.data.frame(pca$ind$coord)
+
+sil_width <- sapply(2:10, function(k){
+  grupos_k <- cutree(hclust(dist(scores_pca), method = "ward.D2"), k = k)
+  ss <- silhouette(grupos_k, dist(scores_pca))
+  mean(ss[, 3])
+})
+
+sil_df <- data.frame(
+  k = 2:10,
+  silhouette = sil_width
+)
+
+sil_df
+
+
+# Plotando:
+
+library(ggplot2)
+
+ggplot(sil_df, aes(x = k, y = silhouette)) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = 2:10) +
+  labs(title = "Largura média da silhueta",
+       x = "Número de grupos (k)",
+       y = "Silhouette média")
+
+
+sil_df[which.max(sil_df$silhouette), ]
+
+
+
+
+
+
+## 1. ANÁLISE DIRETA (MÉDIA DAS VARIÁVEIS POR GRUPO)
+
+library(dplyr)
+
+dados_cluster <- banco_original %>%
+  mutate(GRUPO = grupos)
+
+resumo_grupos <- dados_cluster %>%
+  group_by(GRUPO) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+
+resumo_grupos
+
+resumo_grupos[,c(1:8)]
+resumo_grupos[,c(1,9:16)]
+
+
+## 2. PADRONIZAR (ESSENCIAL para comparar variáveis)
+
+dados_padronizados <- dados_cluster %>%
+  mutate(across(where(is.numeric), scale))
+
+resumo_padronizado <- dados_padronizados %>%
+  group_by(GRUPO) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+
+resumo_padronizado
+
+
+
+
+
+## 3. HEATMAP DOS GRUPOS (VISUAL FORTE)
+
+library(pheatmap)
+
+matriz <- as.matrix(resumo_padronizado[,-1])
+rownames(matriz) <- paste("Grupo", resumo_padronizado$GRUPO)
+
+pheatmap(matriz,
+         cluster_rows = FALSE,
+         cluster_cols = TRUE,
+         main = "Perfil das Variáveis por Grupo")
+
+
+
+
+# 4. USAR A PCA (INTERPRETAÇÃO MAIS ELEGANTE)
+
+loadings <- pca$var$coord
+
+
+
+scores <- as.data.frame(pca$ind$coord)
+scores$GRUPO <- grupos
+
+centroides <- scores %>%
+  group_by(GRUPO) %>%
+  summarise(across(everything(), mean))
+
+centroides
+
+
+
+
+
+
+# 5. IDENTIFICAR VARIÁVEIS DISCRIMINANTES (ANOVA)
+
+variaveis <- names(banco_original)[sapply(banco_original, is.numeric)]
+
+resultado_anova <- lapply(variaveis, function(var) {
+  modelo <- aov(banco_original[[var]] ~ as.factor(grupos))
+  summary(modelo)
+})
+
+names(resultado_anova) <- variaveis
+resultado_anova
+
+
+
+
+
+
+# 6. RANKING DAS VARIÁVEIS MAIS IMPORTANTES
+
+pvalues <- sapply(variaveis, function(var) {
+  modelo <- aov(banco_original[[var]] ~ as.factor(grupos))
+  summary(modelo)[[1]][["Pr(>F)"]][1]
+})
+
+sort(pvalues)
+
+
+
+# Gráfico 01
+
+library(dplyr)
+library(ggplot2)
+
+# 1. Calcular p-values
+pvalues <- sapply(variaveis, function(var) {
+  modelo <- aov(banco_original[[var]] ~ as.factor(grupos))
+  summary(modelo)[[1]][["Pr(>F)"]][1]
+})
+
+# 2. Organizar tabela para o gráfico
+df_pvalues <- data.frame(
+  Variavel = names(pvalues),
+  p_value = as.numeric(pvalues)
+) %>%
+  mutate(
+    logp = -log10(p_value),
+    Significativa = ifelse(p_value < 0.05, "Sim", "Não")
+  ) %>%
+  arrange(desc(logp))
+
+# 3. Gráfico elegante
+ggplot(df_pvalues, aes(x = reorder(Variavel, logp), y = logp)) +
+  geom_col(aes(fill = Significativa), width = 0.75) +
+  geom_hline(yintercept = -log10(0.05), linetype = 2, linewidth = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Ranking das variáveis mais importantes",
+    subtitle = "Discriminação entre grupos via ANOVA",
+    x = "Variável",
+    y = expression(-log[10](p-value)),
+    fill = "p < 0,05"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.y = element_text(face = "bold"),
+    legend.position = "top"
+  )
+
+
+
+
+# Gráfico 02
+
+library(dplyr)
+library(ggplot2)
+
+pvalues <- sapply(variaveis, function(var) {
+  modelo <- aov(banco_original[[var]] ~ as.factor(grupos))
+  summary(modelo)[[1]][["Pr(>F)"]][1]
+})
+
+df_pvalues <- data.frame(
+  Variavel = names(pvalues),
+  p_value = as.numeric(pvalues)
+) %>%
+  mutate(
+    logp = -log10(p_value),
+    Significativa = ifelse(p_value < 0.05, "Sim", "Não"),
+    rotulo = ifelse(p_value < 0.001,
+                    format(p_value, scientific = TRUE, digits = 2),
+                    sprintf("%.4f", p_value))
+  ) %>%
+  arrange(desc(logp))
+
+ggplot(df_pvalues, aes(x = reorder(Variavel, logp), y = logp)) +
+  geom_col(aes(fill = Significativa), width = 0.72) +
+  geom_text(aes(label = rotulo), hjust = -0.1, size = 3.6) +
+  geom_hline(yintercept = -log10(0.05), linetype = 2, linewidth = 0.8) +
+  coord_flip(clip = "off") +
+  labs(
+    title = "Variáveis que mais diferenciam os grupos",
+    subtitle = "Maior barra = maior evidência de diferença entre agrupamentos",
+    x = NULL,
+    y = expression(-log[10](p-value)),
+    fill = "Significativa"
+  ) +
+  expand_limits(y = max(df_pvalues$logp) * 1.15) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(color = "gray30"),
+    axis.text.y = element_text(face = "bold"),
+    legend.position = "top",
+    panel.grid.minor = element_blank()
+  )
+
+
+
+
+
+# Gráfico 03
+
+df_top10 <- df_pvalues %>%
+  slice_max(order_by = logp, n = 10)
+
+ggplot(df_top10, aes(x = reorder(Variavel, logp), y = logp)) +
+  geom_col(width = 0.72) +
+  geom_hline(yintercept = -log10(0.05), linetype = 2, linewidth = 0.8) +
+  coord_flip() +
+  labs(
+    title = "Top 10 variáveis mais importantes",
+    x = NULL,
+    y = expression(-log[10](p-value))
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    axis.text.y = element_text(face = "bold")
+  )
+
+
+
+
+
+
+
+
+# Random Forest para importância de variáveis
+
+library(randomForest)
+
+#rf <- randomForest(as.factor(grupos) ~ ., data = banco_original, importance = TRUE)
+
+#importance(rf)
+#varImpPlot(rf)
+
+
+
+
+
+
+
+#-----------------------------------------------------------------
+
+### 1. RANKING PELO SCORE DA PCA (mais direto e elegante)
+
+
+scores <- as.data.frame(pca$ind$coord)
+
+ranking_pc1 <- data.frame(
+  CLONE = banco_original$CLONES,
+  PC1 = scores$Dim.1
+) %>%
+  arrange(desc(PC1))
+
+ranking_pc1
+
+
+
+### 2. RANKING MULTICRITÉRIO (PC1 + PC2 + …)
+
+eig <- pca$eig
+
+# proporção de variância
+pesos <- eig[,2] / 100  
+
+scores <- as.data.frame(pca$ind$coord)
+
+# número real de componentes disponíveis
+ncomp <- ncol(scores)
+
+# pegar apenas os pesos correspondentes
+pesos <- pca$eig[1:ncomp, 2] / 100
+
+
+score_global <- as.matrix(scores) %*% pesos
+
+library(dplyr)
+
+ranking_global <- data.frame(
+  CLONE = banco_original$CLONES,
+  SCORE = as.numeric(score_global)
+) %>%
+  arrange(desc(SCORE))
+
+ranking_grupos <- data.frame(
+  CLONE = banco_original$CLONES,
+  GRUPO = grupos,
+  SCORE = as.numeric(score_global)
+) %>%
+  group_by(GRUPO) %>%
+  arrange(desc(SCORE), .by_group = TRUE)
+
+dim(scores)
+length(pesos)
+
+# ✔ Top por grupo
+ranking_grupos %>% slice_max(SCORE, n = 3)
+
+
+# ✔ Ver consistência entre grupos
+boxplot(SCORE ~ GRUPO, data = ranking_grupos)
+
+
+# ✔ Cruzar com variáveis originais
+dados_cluster %>%
+  mutate(SCORE = score_global) %>%
+  group_by(GRUPO) %>%
+  summarise(media_score = mean(SCORE))
+
+
+
+
+
+### 3. RANKING POR DISTÂNCIA AO “IDEAL” (TOP nível)
+
+
+dados_num <- banco_original %>%
+  select(where(is.numeric)) %>%
+  scale()
+
+ideal <- apply(dados_num, 2, max)
+
+
+
+dist_ideal <- apply(dados_num, 1, function(x) {
+  sqrt(sum((x - ideal)^2))
+})
+
+ranking_ideal <- data.frame(
+  CLONE = banco_original$CLONES,
+  DIST = dist_ideal
+) %>%
+  arrange(DIST)  # menor = melhor
+
+ranking_ideal
+
+
+
+
+
+
+### 4. RANKING DENTRO DE GRUPOS (INSIGHT FINO)
+
+ranking_grupos <- data.frame(
+  CLONE = banco_original$CLONES,
+  GRUPO = grupos,
+  SCORE = score_global
+) %>%
+  group_by(GRUPO) %>%
+  arrange(desc(SCORE), .by_group = TRUE)
+
+ranking_grupos
+
+
+
+
+
+### 5. VISUALIZAÇÃO (TOP)
+
+library(ggplot2)
+
+ggplot(ranking_global[1:36,], aes(x = reorder(CLONE, SCORE), y = SCORE)) +
+  geom_col() +
+  coord_flip() +
+  labs(title = "Top 36 Clones (Ranking PCA)",
+       x = "Clone",
+       y = "Score")
+
+
+
+
